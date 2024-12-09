@@ -1,22 +1,6 @@
-private sealed interface Block {
-    val blocksCount: ULong
-}
-
-private data class Data(val id: ULong, override val blocksCount: ULong) : Block {
-    override fun toString(): String {
-        return buildString { repeat((0UL until blocksCount).count()) { append("$id") } }
-    }
-}
-
-private data class Empty(override val blocksCount: ULong) : Block {
-    override fun toString(): String {
-        return buildString { repeat((0UL until blocksCount).count()) { append(".") } }
-    }
-}
-
 fun main() {
 
-    fun parse2(input: List<String>): List<Long> {
+    fun parse(input: List<String>): List<Long> {
         val allLines = input.joinToString("")
 
         var currentIndex = 0L
@@ -35,54 +19,12 @@ fun main() {
             result
         }
     }
-//    fun parse(input: List<String>): List<Block> {
-//        val allLines = input.joinToString("")
-//
-//        var currentIndex = 0UL
-//        var wasData = false
-//
-//        val result = mutableListOf<Block>()
-//        allLines.forEach { char ->
-//            if (!wasData) {
-//                result.add(Data(currentIndex++, char.toString().toULong()))
-//            } else {
-//                result.add(Empty(char.toString().toULong()))
-//            }
-//            wasData = !wasData
-//        }
-//
-//        return result.also { println("list size=${it.size}") }
-//    }
 
-//    fun isValid(blocks: List<Block>): Boolean {
-//        return blocks.indexOfFirst { it is Empty } > blocks.indexOfLast { it is Data }
-//    }
-
-    fun isValid2(blocks: List<Long>): Boolean {
+    fun isValid(blocks: List<Long>): Boolean {
         return blocks.indexOfFirst { it < 0 } > blocks.indexOfLast { it >= 0 }
     }
 
-//    fun mergeNeighboringEmpty(input: List<Block>): List<Block> {
-//        if (input.isEmpty()) return emptyList()
-//
-//        val result = mutableListOf<Block>()
-//        var current = input.first()
-//
-//        for (i in 1 until input.size) {
-//            val next = input[i]
-//            if (current is Empty && next is Empty) {
-//                println("Merging")
-//                current = current.copy(blocksCount = current.blocksCount + next.blocksCount)
-//            } else {
-//                result.add(current)
-//                current = next
-//            }
-//        }
-//        result.add(current) // Add the last item
-//        return result
-//    }
-
-    fun moveOneBlock2(blocks: List<Long>): List<Long> {
+    fun moveOneBlock(blocks: List<Long>): List<Long> {
         val result = blocks.toMutableList()
 
         val lastData = blocks.indexOfLast { it >= 0L }
@@ -96,88 +38,144 @@ fun main() {
         return result
     }
 
-//    fun moveOneBlock(blocks: List<Block>): List<Block> {
-//        val mutableBlocks = blocks.toMutableList()
-//        val indexOfLastData = mutableBlocks.indexOfLast { it is Data }
-//        val last = mutableBlocks.removeAt(indexOfLastData)
-//        if (last !is Data) {
-//            throw RuntimeException("last isn't data.")
-//        }
-//        val newBlockCount = last.blocksCount - 1UL
-//
-//        // add 1 empty to be after (possibly) added original
-//        mutableBlocks.add(indexOfLastData, Empty(1UL))
-//        if (newBlockCount > 0UL) {
-//            // we need to add it back
-//            mutableBlocks.add(indexOfLastData, last.copy(blocksCount = newBlockCount))
-//        }
-//
-//        val indexOfFirstEmpty = mutableBlocks.indexOfFirst { it is Empty }
-//
-//        val firstEmpty = mutableBlocks.removeAt(indexOfFirstEmpty)
-//        if (firstEmpty !is Empty) {
-//            throw RuntimeException("first isn't empty.")
-//        }
-//
-//        val remainingEmpty = firstEmpty.blocksCount - 1UL
-//
-//        if (remainingEmpty != 0UL) {
-//            mutableBlocks.add(indexOfFirstEmpty, Empty(remainingEmpty))
-//        }
-//
-//        val previousDataIndex = indexOfFirstEmpty - 1
-//        val previousDataTmp = mutableBlocks[previousDataIndex]
-//        if ((previousDataTmp as? Data)?.id == last.id) {
-//            val newData =
-//                (mutableBlocks.removeAt(previousDataIndex) as Data).copy(blocksCount = previousDataTmp.blocksCount + 1UL)
-//            mutableBlocks.add(previousDataIndex, newData)
-//        } else {
-//            mutableBlocks.add(indexOfFirstEmpty, Data(id = last.id, blocksCount = 1UL))
-//        }
-//        return mutableBlocks
-//    }
+    fun findEmptyBlock(blocks: List<Long>, minSize: Int): IntRange? {
+        var startIndex = -1
+        var endIndex = -1
 
+        blocks.forEachIndexed { index, block ->
+            if (block >= 0) {
+                if (startIndex != -1 && endIndex - startIndex + 1 >= minSize) {
+                    return startIndex..endIndex
+                }
+                // we found file, reset counters
+                startIndex = -1
+                endIndex = -1
+                return@forEachIndexed
+            }
+            if (startIndex == -1) {
+                startIndex = index
+                endIndex = index
+            } else {
+                endIndex = index
+            }
+        }
 
-//    fun calculateChecksum(blocks: List<Block>): ULong {
-//        return blocks.filterIsInstance<Data>()
-//            .flatMap { block ->
-//                (0UL until block.blocksCount).map { block.id }
-//            }
-//            .mapIndexed { index, i -> index.toULong() * i }
-//            .sumOf { it }
-//    }
+        return null
+    }
 
-    fun calculateChecksum2(blocks: List<Long>): Long {
-        return blocks.takeWhile { it >= 0 }
+    fun findFile(blocks: List<Long>, until: Long): IntRange? {
+        if (until == 0L) {
+            return null
+        }
+        val endIndex = blocks.indexOfLast { it in 0..<until }
+        val foundNumber = blocks[endIndex]
+        var startIndex = endIndex
+
+        if (endIndex == 0) {
+            return 0..0
+        }
+
+        for (i in endIndex - 1 downTo 0) {
+            if (blocks[i] >= 0 && blocks[i] == foundNumber) {
+                startIndex = i
+            } else {
+                break
+            }
+        }
+
+        if (startIndex == 0) {
+            // we are out of files
+            return null
+        }
+
+        return startIndex..endIndex
+    }
+
+    fun replace(blocks: List<Long>, emptyRange: IntRange, fileRange: IntRange): List<Long> {
+        if (fileRange.first <= emptyRange.first) {
+            return blocks
+        }
+
+        val mutableBlocks = blocks.toMutableList()
+
+        fileRange.withIndex().forEach {
+            mutableBlocks[emptyRange.start + it.index] = mutableBlocks[it.value]
+            mutableBlocks[it.value] = -1L
+        }
+
+        return mutableBlocks
+    }
+
+    fun moveOneFile(blocks: List<Long>, maxNumber: Long): Pair<List<Long>, Long> {
+        val fileBlock = findFile(blocks, maxNumber)
+        if (fileBlock == null) {
+            // no files
+//            println("moveOneFile(maxNum=$maxNumber):\n$blocks\n\n\n\n=>no more files")
+            return blocks to Long.MIN_VALUE
+        }
+        val emptyBlock = findEmptyBlock(blocks, fileBlock.count())
+        if (emptyBlock == null) {
+            // no free space for this file
+//            println("moveOneFile(maxNum=$maxNumber):\n$blocks\n\n$fileBlock\n=>no more empty blocks")
+            return blocks to blocks[fileBlock.first]
+        }
+
+        return (replace(blocks, emptyBlock, fileBlock) to blocks[fileBlock.first]).also {
+//            println("moveOneFile(maxNum=$maxNumber):\n$blocks\n$emptyBlock\n$fileBlock\n=>${it.first}")
+        }
+    }
+
+    fun calculateChecksum(blocks: List<Long>): Long {
+        return blocks.dropWhile { it < 0 }
             .mapIndexed { index, l -> index * l }
             .sum()
     }
 
-    fun part1(input: List<String>): Long {
-        var parsed = parse2(input)
+    fun calculateChecksum2(blocks: List<Long>): Long {
+        return blocks
+            .mapIndexed { index, l ->
+                if (l >= 0) {
+                    index * l
+                } else {
+                    0
+                }
+            }
+            .sum()
+    }
 
-        while (!isValid2(parsed)) {
-            parsed = moveOneBlock2(parsed)
+    fun part1(input: List<String>): Long {
+        var parsed = parse(input)
+
+        while (!isValid(parsed)) {
+            parsed = moveOneBlock(parsed)
+        }
+
+        return calculateChecksum(parsed)
+    }
+
+    fun part2(input: List<String>): Long {
+        var parsed = parse(input)
+        var max = Long.MAX_VALUE
+        while (max > Long.MIN_VALUE) {
+            val (newParsed, newMax) = moveOneFile(parsed, max)
+            parsed = newParsed
+            max = newMax
         }
 
         return calculateChecksum2(parsed)
     }
 
-    fun part2(input: List<String>): Int {
-        return input.size
-    }
-
     // Or read a large test input from the `src/Day01_test.txt` file:
     println("**Test Data**")
     val testInput = readInput("Day09_test")
-    part1(testInput).println()
-//    part2(testInput).println()
-    check(part1(testInput) == 1928L)
-//    check(part2(testInput) == 34)
+//    part1(testInput).println()
+    part2(testInput).println()
+//    check(part1(testInput) == 1928L)
+    check(part2(testInput) == 2858L)
     println("**Real Data**")
 
     // Read the input from the `src/Day01.txt` file.
     val input = readInput("Day09")
-    part1(input).println()
-//    part2(input).println()
+//    part1(input).println()
+    part2(input).println()
 }
