@@ -5,8 +5,6 @@ data class TheMap(
     val height: Int,
 )
 
-data class Coords(val x: Int, val y: Int)
-
 data class VisitedPosition(val coords: Coords, val direction: Char)
 
 fun main() {

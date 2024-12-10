@@ -19,3 +19,9 @@ fun String.md5() = BigInteger(1, MessageDigest.getInstance("MD5").digest(toByteA
  * The cleaner shorthand for printing output.
  */
 fun Any?.println() = println(this)
+
+data class Coords(val x: Int, val y: Int)
+
+fun isInBounds(coords: Coords, width: Int, height: Int): Boolean {
+    return coords.x >= 0 && coords.y >= 0 && coords.x < width && coords.y < height
+}
